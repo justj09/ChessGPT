@@ -1,6 +1,33 @@
+import dotenv
+import os
+import json
+import random
+
+from openai import OpenAI
+
 import chess
 
+dotenv.load_dotenv()
+
 board = chess.Board()
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+def get_completion_content():
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a genius tactician that describes your moves in a verbose comedic way within JSON. You are the black side in a chess game with the user." + get_cheat_message() + ". An example of uci is [e2e4]."},
+            {"role": "user", "content": "The following is the current board state in FEN: " + board.fen() + "\n Give me you're next move and a nonsense explanation for all moves done in the following format, where uci is a list: {uci: [...], explanation: ...}."}
+        ],
+        response_format={"type": "json_object"}
+    )
+    return completion.choices[0].message.content
+
+def get_cheat_message():
+    if (random.randint(0, 3) == 0):
+        return "You are allowed to cheat by moving multiple pieces by giving them in a list"
+    else:
+        return ""
 
 def generate_legal_moves_from_square(square):
     legal_moves = []
@@ -10,10 +37,10 @@ def generate_legal_moves_from_square(square):
     return legal_moves
 
 def square_input():
-    return chess.parse_square(input("enter a square: "))
+    return chess.parse_square(input("enter a square: ").strip().lower())
 
 def move_input():
-    return chess.Move.from_uci(input("enter a move: "))
+    return chess.Move.from_uci(input("enter a move: ").strip().lower())
 
 # null move
 # board.push(chess.Move.null())
@@ -45,3 +72,13 @@ while (True):
     move = move_input()
     board.push(move)
     print(board)
+    print("")
+    content = json.loads(get_completion_content())
+
+    for uci in content["uci"]:
+        print(uci)
+        board.set_piece_at(chess.parse_square(uci[2:4]), board.remove_piece_at(chess.parse_square(uci[0:2])))
+    board.push(chess.Move.null())
+    print(content["explanation"])
+    print(board)
+    print("")

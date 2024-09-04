@@ -37,10 +37,46 @@ def generate_legal_moves_from_square(square):
     return legal_moves
 
 def square_input():
-    return chess.parse_square(input("enter a square: ").strip().lower())
+    while (True):
+        try:
+            return chess.parse_square(input("enter a square: ").strip().lower())
+        except:
+            pass
 
 def move_input():
-    return chess.Move.from_uci(input("enter a move: ").strip().lower())
+    while (True):
+        try:
+            return chess.Move.from_uci(input("enter a move: ").strip().lower())
+        except:
+            pass
+
+def perform_player_turn():
+    legal_moves = []
+    while (len(legal_moves) == 0):
+        square = square_input()
+        legal_moves = generate_legal_moves_from_square(square)
+    for move in legal_moves:
+        print(move)
+    move = move_input()
+    board.push(move)
+    return
+
+def perform_ai_turn():
+    content = json.loads(get_completion_content())
+    for uci in content["uci"]:
+        print(uci)
+        try:
+            board.push_uci(uci)
+        except:
+            board.set_piece_at(chess.parse_square(uci[2:4]), board.remove_piece_at(chess.parse_square(uci[0:2])))
+            board.push(chess.Move.null())
+    print(content["explanation"])
+    return
+
+def print_board():
+    print(board)
+    print("")
+    return
 
 # null move
 # board.push(chess.Move.null())
@@ -63,22 +99,7 @@ A1 B1 C1 D1 E1 F1 G1 H1
 """
 
 while (True):
-    legal_moves = []
-    while (len(legal_moves) == 0):
-        square = square_input()
-        legal_moves = generate_legal_moves_from_square(square)
-    for move in legal_moves:
-        print(move)
-    move = move_input()
-    board.push(move)
-    print(board)
-    print("")
-    content = json.loads(get_completion_content())
-
-    for uci in content["uci"]:
-        print(uci)
-        board.set_piece_at(chess.parse_square(uci[2:4]), board.remove_piece_at(chess.parse_square(uci[0:2])))
-    board.push(chess.Move.null())
-    print(content["explanation"])
-    print(board)
-    print("")
+    perform_player_turn()
+    print_board()
+    perform_ai_turn()
+    print_board()
